@@ -29,7 +29,8 @@ class SpacyTokenizer(Tokenizer):
             nlp_kwargs['tagger'] = False
         if 'ner' not in self.annotators:
             nlp_kwargs['entity'] = False
-        self.nlp = spacy.load(model, **nlp_kwargs)
+        # self.nlp = spacy.load(model, **nlp_kwargs)
+        self.nlp = spacy.load('en_core_web_trf')
 
     def tokenize(self, text):
         # We don't treat new lines as tokens.

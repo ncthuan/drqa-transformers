@@ -27,10 +27,17 @@ try:
 except ImportError:
     pass
 
+try:
+    from .spacy_vi_tokenizer import SpacyViTokenizer
+except ImportError:
+    pass
+
 
 def get_class(name):
     if name == 'spacy':
         return SpacyTokenizer
+    if name == 'spacy_vi':
+        return SpacyViTokenizer
     if name == 'corenlp':
         return CoreNLPTokenizer
     if name == 'regexp':
