@@ -156,6 +156,9 @@ class DrQATransformers(object):
         ).to(self.device)
 
         # Feed forward
+        n_batch = (n_examples // self.batch_size) + 1
+        for i in range(n_batch):
+            pass
         with torch.no_grad():
             outputs = self.reader(**inputs)
 

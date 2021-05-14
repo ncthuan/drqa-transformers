@@ -53,8 +53,8 @@ if __name__ == '__main__':
     #                     help="Specify GPU device id to use")
     # parser.add_argument('--parallel', action='store_true',
     #                     help='Use data parallel (split across gpus)')
-    # parser.add_argument('--batch-size', type=int, default=128,
-    #                     help='Document paragraph batching size')
+    parser.add_argument('--batch-size', type=int, default=32,
+                        help='Document paragraph batching size')
     # parser.add_argument('--predict-batch-size', type=int, default=1000,
     #                     help='Question batching size')
     args = parser.parse_args()
@@ -81,7 +81,7 @@ if __name__ == '__main__':
         },
         db_config={'options': {'db_path': args.doc_db}},
         num_workers=args.num_workers,
-        # batch_size=args.batch_size,
+        batch_size=args.batch_size,
     )
 
 
