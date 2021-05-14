@@ -1,6 +1,5 @@
 import torch
 import regex
-import time
 import logging
 import numpy as np
 
@@ -120,7 +119,6 @@ class DrQATransformers(object):
 
     def process(self, query, top_n=1, n_docs=5, return_context=False):
         """Run a single query."""
-        t0 = time.time()
 
         # Rank documents for query.
         ranked = [self.ranker.closest_docs(query, k=n_docs)]
@@ -152,6 +150,7 @@ class DrQATransformers(object):
             [query]*n_examples,
             flat_splits,
             padding=True,
+            truncation=True,
             return_attention_mask=True,
             return_tensors='pt'
         ).to(self.device)
@@ -183,8 +182,6 @@ class DrQATransformers(object):
             all_predictions.append(prediction)
 
         # breakpoint()
-        logger.info('Processed 1 query in %.4f (s)' % (time.time() - t0))
-
         return all_predictions
 
 
