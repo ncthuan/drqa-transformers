@@ -19,44 +19,6 @@ from termcolor import colored
 from drqa import pipeline
 
 
-def process(question, top_n=3, n_docs=5):
-    predictions = DrQA.process(
-        question, top_n, n_docs, return_context=True
-    )
-    table = prettytable.PrettyTable(
-        ['Rank', 'Answer', 'Doc', 'Answer Score', 'Doc Score']
-    )
-    for i, p in enumerate(predictions, 1):
-        table.add_row([i, p['span'], p['doc_id'], '%.5g' % p['span_score'], '%.5g' % p['doc_score']])
-
-    print('Top Predictions:')
-    print(table)
-    print('\nContexts:')
-    for p in predictions:
-        text = p['context']['text']
-        answer = p['span']
-        start = text.find(answer)
-        end = start + len(answer)
-        
-        output = (
-            text[:start] +
-            colored(text[start: end], 'green', attrs=['bold']) +
-            text[end:]
-        )
-        print('[ Doc = %s ]' % p['doc_id'])
-        print(output + '\n')
-
-
-banner = """
-Interactive DrQA
->> process(question, top_n=1, n_docs=5)
->> usage()
-"""
-
-def usage():
-    print(banner)
-
-
 if __name__ == '__main__':
     
     logger = logging.getLogger()
@@ -108,5 +70,44 @@ if __name__ == '__main__':
     # ------------------------------------------------------------------------------
     # Drop in to interactive mode
     # ------------------------------------------------------------------------------
+
+
+    def process(question, top_n=3, n_docs=5):
+        predictions = DrQA.process(
+            question, top_n, n_docs, return_context=True
+        )
+        table = prettytable.PrettyTable(
+            ['Rank', 'Answer', 'Doc', 'Answer Score', 'Doc Score']
+        )
+        for i, p in enumerate(predictions, 1):
+            table.add_row([i, p['span'], p['doc_id'], '%.5g' % p['span_score'], '%.5g' % p['doc_score']])
+
+        print('Top Predictions:')
+        print(table)
+        print('\nContexts:')
+        for p in predictions:
+            text = p['context']['text']
+            answer = p['span']
+            start = text.find(answer)
+            end = start + len(answer)
+            
+            output = (
+                text[:start] +
+                colored(text[start: end], 'green', attrs=['bold']) +
+                text[end:]
+            )
+            print('[ Doc = %s ]' % p['doc_id'])
+            print(output + '\n')
+
+
+    banner = """
+    Interactive DrQA
+    >> process(question, top_n=1, n_docs=5)
+    >> usage()
+    """
+
+    def usage():
+        print(banner)
+
 
     code.interact(banner=banner, local=locals())

@@ -1,4 +1,3 @@
-from typing import Tuple
 import torch
 import regex
 import time
@@ -183,7 +182,7 @@ class DrQATransformers(object):
                 }
             all_predictions.append(prediction)
 
-        breakpoint()
+        # breakpoint()
         logger.info('Processed 1 query in %.4f (s)' % (time.time() - t0))
 
         return all_predictions
