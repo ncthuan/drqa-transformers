@@ -6,8 +6,10 @@
 # LICENSE file in the root directory of this source tree.
 """Run predictions using the full DrQA retriever-reader pipeline."""
 
-import torch
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+import torch
 import time
 import json
 import argparse
@@ -48,8 +50,8 @@ if __name__ == '__main__':
                         help='Path to Document DB')
     parser.add_argument('--n-docs', type=int, default=5,
                         help="Number of docs to retrieve per query")
-    parser.add_argument('--top-n', type=int, default=1,
-                        help="Number of predictions to make per query")
+    # parser.add_argument('--top-n', type=int, default=1,
+    #                     help="Number of predictions to make per query")
     parser.add_argument('--no-cuda', action='store_true',
                         help="Use CPU only")
     parser.add_argument('--num-workers', type=int, default=None,
@@ -107,10 +109,10 @@ if __name__ == '__main__':
     predictions = []
     progess_bar = tqdm(enumerate(queries), total=len(queries), position=0, leave=True)
     for i, query in progess_bar:
-        predictions.extend(
-            DrQA.process(query, n_docs=args.n_docs,top_n=args.top_n)
-        )
-        
+        p = DrQA.process(query, n_docs=args.n_docs, top_n=1)
+        p = normalize(p[0]['span']) 
+        predictions.append(p)
+
     exact_match = 0
     f1 = 0
     for i in range(len(predictions)):

@@ -51,7 +51,7 @@ class DrQATransformers(object):
             self,
             reader_model=None,
             use_fast_tokenizer=True,
-            # batch_size=128, # currently no batch inference
+            batch_size=32, # currently no batch inference
             cuda=True,
             num_workers=None,
             db_config=None,
@@ -71,7 +71,7 @@ class DrQATransformers(object):
             db_config: config for doc db.
             ranker_config: config for ranker.
         """
-        # self.batch_size = batch_size
+        self.batch_size = batch_size
         self.device = 'cuda' if cuda else 'cpu'
         self.num_workers = num_workers
 

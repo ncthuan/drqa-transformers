@@ -6,13 +6,15 @@
 # LICENSE file in the root directory of this source tree.
 """Run predictions using the full DrQA retriever-reader pipeline."""
 
-import torch
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+import torch
 import time
 import json
 import argparse
 import logging
-import tqdm
+from tqdm import tqdm
 
 from drqa import pipeline
 
@@ -28,9 +30,9 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('dataset', type=str)
-    parser.add_argument('--out-dir', type=str, default='/tmp',
+    parser.add_argument('--out-dir', type=str, default='data/pred',
                         help=("Directory to write prediction file to "
-                            "(<dataset>-<model>-pipeline.preds)"))
+                            "(<dataset>-<model>-pipeline.json)"))
     parser.add_argument('--reader-model', type=str, default=None,
                         help="Name of the Huggingface transformer model")
     parser.add_argument('--use-fast-tokenizer', action='store_true',
@@ -96,19 +98,25 @@ if __name__ == '__main__':
 
     model = os.path.splitext(os.path.basename(args.reader_model or 'default'))[0]
     basename = os.path.splitext(os.path.basename(args.dataset))[0]
-    outfile = os.path.join(args.out_dir, basename + '-' + model + '-pipeline.preds')
+    outfile = os.path.join(args.out_dir, basename + '-' + model + '-pipeline.json')
 
     logger.info('Writing results to %s' % outfile)
     with open(outfile, 'w') as f:
         
-        progess_bar = tqdm(enumerate(queries), total=len(queries), position=0, leave=True)
+        progess_bar = tqdm(enumerate(queries), total=len(queries))
         for i, query in progess_bar:
+            if i < 5: continue
             predictions = DrQA.process(
                 query,
                 n_docs=args.n_docs,
                 top_n=args.top_n,
             )
             for p in predictions:
-                f.write(json.dumps(p) + '\n')
+                # to string before dumping
+                p['doc_score'] = '%.5g' % p['doc_score']
+                p['span_score'] = '%.5g' % p['span_score']
+            
+            # Dump predictions for each query on a single line
+            f.write(json.dumps(predictions) + '\n')
 
     logger.info('Total time: %.2f' % (time.time() - t0))

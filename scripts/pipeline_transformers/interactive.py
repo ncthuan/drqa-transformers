@@ -14,6 +14,7 @@ import argparse
 import code
 import prettytable
 import logging
+import time
 
 from termcolor import colored
 from drqa import pipeline
@@ -73,9 +74,12 @@ if __name__ == '__main__':
 
 
     def process(question, top_n=3, n_docs=5):
+        t0 = time.time()
         predictions = DrQA.process(
             question, top_n, n_docs, return_context=True
         )
+        logger.info('Processed 1 query in %.4f (s)' % (time.time() - t0))
+
         table = prettytable.PrettyTable(
             ['Rank', 'Answer', 'Doc', 'Answer Score', 'Doc Score']
         )
