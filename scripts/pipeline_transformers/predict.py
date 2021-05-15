@@ -51,8 +51,8 @@ if __name__ == '__main__':
                         help="Use CPU only")
     parser.add_argument('--num-workers', type=int, default=None,
                         help='Number of CPU processes (for tokenizing, etc)')
-    # parser.add_argument('--gpu', type=int, default=-1,
-    #                     help="Specify GPU device id to use")
+    parser.add_argument('--gpu', type=int, default=-1,
+                        help="Specify GPU device id to use")
     # parser.add_argument('--parallel', action='store_true',
     #                     help='Use data parallel (split across gpus)')
     parser.add_argument('--batch-size', type=int, default=32,
