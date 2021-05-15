@@ -227,9 +227,9 @@ class DrQATransformers(object):
             scores:  top_n prediction scores
             idx_sort:  top_n batch element ids
         """
-        input_ids = inputs.input_ids.numpy()
-        start_logits = start_logits.numpy()
-        end_logits = end_logits.numpy()
+        input_ids = inputs.input_ids.cpu().numpy()
+        start_logits = start_logits.cpu().numpy()
+        end_logits = end_logits.cpu().numpy()
         # Ensure we have batch axis
         if start_logits.ndim == 1: start_logits = start_logits[None]
         if end_logits.ndim == 1: end_logits = end_logits[None]
