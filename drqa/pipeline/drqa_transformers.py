@@ -42,20 +42,16 @@ def fetch_text(doc_id):
 
 
 class DrQATransformers(object):
-    # Target size for squashing short paragraphs together.
-    # 0 = read every paragraph independently
-    # infty = read all paragraphs together
-    GROUP_LENGTH = 0
-
     def __init__(
             self,
             reader_model=None,
             use_fast_tokenizer=True,
-            batch_size=32, # currently no batch inference
+            batch_size=32,
             cuda=True,
             num_workers=None,
             db_config=None,
-            ranker_config=None
+            ranker_config=None,
+            group_length=200,
         ):
         """Initialize the pipeline.
 
@@ -63,17 +59,21 @@ class DrQATransformers(object):
             reader_model: model file from which to load the DocReader.
             use_fast_tokenizer: whether to use fast tokenizer
             fixed_candidates: if given, all predictions will be constrated to
-              the set of candidates contained in the file. One entry per line.
+                the set of candidates contained in the file. One entry per line.
             batch_size: batch size when processing paragraphs.
             cuda: whether to use gpu.
             num_workers: number of parallel CPU processes to use for tokenizing
-              and post processing resuls.
+                and post processing resuls.
             db_config: config for doc db.
             ranker_config: config for ranker.
+            group_length: target size for squashing short paragraphs together.
+                0 = read every paragraph independently
+                infty = read all paragraphs together
         """
         self.batch_size = batch_size
         self.device = 'cuda' if cuda else 'cpu'
         self.num_workers = num_workers
+        self.group_length = group_length
 
         logger.info('Initializing document ranker...')
         ranker_config = ranker_config or {}
@@ -107,13 +107,13 @@ class DrQATransformers(object):
             split = split.strip()
             if len(split) == 0:
                 continue
+            curr.append(split)
+            curr_len += len(split)
             # Maybe group paragraphs together until we hit a length limit
-            if len(curr) > 0 and curr_len + len(split) > self.GROUP_LENGTH:
+            if len(curr) > 0 and curr_len > self.group_length:
                 yield ' '.join(curr)
                 curr = []
                 curr_len = 0
-            curr.append(split)
-            curr_len += len(split)
         if len(curr) > 0:
             yield ' '.join(curr)
 
@@ -154,7 +154,7 @@ class DrQATransformers(object):
             return_attention_mask=True,
             return_tensors='pt'
         ).to(self.device)
-
+        
         # Feed forward
         n_batch = (n_examples // self.batch_size) + 1
         for i in range(n_batch):
@@ -169,18 +169,24 @@ class DrQATransformers(object):
         all_predictions = []
         for i in range(top_n):
             split_id = idx_sort[i]
-            answer_ids = inputs.input_ids[split_id][start[i]:end[i]]
+            SEP_token_idx = int(torch.where(inputs.input_ids[0] == 102)[0][0])
+            answer = self.span_to_answer(
+                flat_splits[split_id],
+                start[i] - (SEP_token_idx+1),
+                end[i] - (SEP_token_idx+1),
+            )
+            breakpoint()
             prediction = {
                 'doc_id': didx2did[sidx2didx[split_id]],
-                'span': self.tokenizer.decode(answer_ids),
+                'span': answer['answer'],
                 'doc_score': all_doc_scores[0][sidx2didx[split_id]],
                 'span_score': score[i],
             }
             if return_context:
                 prediction['context'] = {
                     'text': flat_splits[split_id],
-                    'start': start[i],
-                    'end': end[i],
+                    'start': answer['start'],
+                    'end': answer['end'],
                 }
             all_predictions.append(prediction)
 
@@ -258,3 +264,48 @@ class DrQATransformers(object):
         scores = candidates[idx_sort, starts, ends]
 
         return starts, ends, scores, idx_sort
+
+
+    def span_to_answer(self, text: str, start: int, end: int):
+        """
+        When decoding from token probabilities, this method maps token indexes to actual word in the initial context.
+
+        Args:
+            text (:obj:`str`): The actual context to extract the answer from.
+            start (:obj:`int`): The answer starting token index.
+            end (:obj:`int`): The answer end token index.
+
+        Returns:
+            Dictionary like :obj:`{'answer': str, 'start': int, 'end': int}`
+        """
+        words = []
+        token_idx = char_start_idx = char_end_idx = chars_idx = 0
+
+        for i, word in enumerate(text.split(" ")):
+            token = self.tokenizer.tokenize(word)
+
+            # Append words if they are in the span
+            if start <= token_idx <= end:
+                if token_idx == start:
+                    char_start_idx = chars_idx
+
+                # if token_idx == end:
+                #     char_end_idx = chars_idx + len(word)
+
+                words += [word]
+
+            # Stop if we went over the end of the answer
+            if token_idx > end:
+                char_end_idx = chars_idx
+                break
+
+            # Append the subtokenization length to the running index
+            token_idx += len(token)
+            chars_idx += len(word) + 1
+
+        # Join text with spaces
+        return {
+            "answer": " ".join(words),
+            "start": max(0, char_start_idx),
+            "end": min(len(text), char_end_idx),
+        }

@@ -91,9 +91,8 @@ if __name__ == '__main__':
         print('\nContexts:')
         for p in predictions:
             text = p['context']['text']
-            answer = p['span']
-            start = text.find(answer)
-            end = start + len(answer)
+            start = p['context']['start']
+            end = p['context']['end']
             
             output = (
                 text[:start] +
