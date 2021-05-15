@@ -1,0 +1,145 @@
+\documentclass[11pt]{article}
+\usepackage[vietnamese]{babel}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{amsmath}
+\usepackage[justification=centering]{caption}
+\usepackage[nottoc]{tocbibind}
+\usepackage{etoolbox}
+\patchcmd{\thebibliography}{\section*{\refname}}{}{}{}
+\usepackage{subfiles}
+\usepackage{textcmds}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,      
+    urlcolor=blue,
+    pdftitle={Question Answering},
+    pdfpagemode=FullScreen,
+    bookmarks=true
+}
+
+%\renewcommand{\section}[2]{}
+
+%\newlist{steps}{enumerate}{1}
+%\setlist[steps, 1]{leftmargin = 1.75cm, label = \textbf{Bước \arabic*:}}
+
+\setstretch{1.2}
+
+\definecolor{green}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\titleclass{\subsubsubsection}{straight}[\subsection]
+
+\newcounter{subsubsubsection}[subsubsection]
+\renewcommand\thesubsubsubsection{\thesubsubsection.\arabic{subsubsubsection}}
+\renewcommand\theparagraph{\thesubsubsubsection.\arabic{paragraph}} % optional; useful if paragraphs are to be numbered
+
+\titleformat{\subsubsubsection}
+  {\normalfont\normalsize\bfseries}{\thesubsubsubsection}{1em}{}
+\titlespacing*{\subsubsubsection}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+\makeatletter
+\renewcommand\paragraph{\@startsection{paragraph}{5}{\z@}%
+  {3.25ex \@plus1ex \@minus.2ex}%
+  {-1em}%
+  {\normalfont\normalsize\bfseries}}
+\renewcommand\subparagraph{\@startsection{subparagraph}{6}{\parindent}%
+  {3.25ex \@plus1ex \@minus .2ex}%
+  {-1em}%
+  {\normalfont\normalsize\bfseries}}
+\def\toclevel@subsubsubsection{4}
+\def\toclevel@paragraph{5}
+\def\toclevel@paragraph{6}
+\def\l@subsubsubsection{\@dottedtocline{4}{7em}{4em}}
+\def\l@paragraph{\@dottedtocline{5}{10em}{5em}}
+\def\l@subparagraph{\@dottedtocline{6}{14em}{6em}}
+\makeatother
+
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{4}
+
+\lstset{frame=tb,
+  language=python,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{black},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=2,
+  resetmargins=true
+}
+
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+    \textbf{\Large ĐẠI HỌC QUỐC GIA HÀ NỘI}\\
+    \textbf{\Large TRƯỜNG ĐẠI HỌC CÔNG NGHỆ}\\
+    
+    *********************\\
+    \vskip 0.5in
+    \includegraphics[width=0.35\linewidth]{UET_logo.png}
+
+    \vskip 0.5in
+    \textbf{\huge XỬ LÍ NGÔN NGỮ TỰ NHIÊN}\\
+    
+    \textbf{\huge BÁO CÁO BÀI TẬP LỚN}\\
+    
+    \vskip 0.3in
+    
+    \textbf{\Large NHÓM 5}\\
+    \textbf{\Large CHỦ ĐỀ: QUESTION ANSWERING}\\
+\end{center}
+\vskip 0.5in
+    % \textbf{Giảng viên:} \hspace{0.6cm} Nguyễn Hà Nam\\
+    % \vskip 0.2in
+    % \textbf{Sinh viên:} \hspace{1cm}Đặng Quang Huy\\
+    % \hspace{2.7cm} Lưu Hoàng Nam\\
+    % \hspace{2.8cm} Hoàng Vũ Duy Anh\\
+    % \hspace{2.8cm} Nguyên Công \\
+\begin{table}[h!]
+\centering
+\begin{tabular}{ll}
+\textbf{Giảng viên:} & TS. Trần Hồng Việt \\
+                     &                        \\
+\textbf{Sinh viên:}  & Hoàng Vũ Duy Anh - 18020001 \\
+                     & Lưu Hoàng Nam - 18020921 \\
+                     & Nguyễn Công Thuận - 18021250 \\
+\end{tabular}
+\end{table}
+
+\newpage
+
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\listoffigures
+\newpage
+
+\subfile{01.tex}
+\newpage
+\subfile{02.tex}
+\newpage
+
+\end{document}
