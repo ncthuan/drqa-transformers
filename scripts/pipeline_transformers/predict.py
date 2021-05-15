@@ -43,6 +43,8 @@ if __name__ == '__main__':
                         help='Path to Document DB')
     parser.add_argument('--n-docs', type=int, default=5,
                         help="Number of docs to retrieve per query")
+    parser.add_argument('--group-length', type=int, default=200,
+                        help='Target size for squashing short paragraphs together')
     parser.add_argument('--top-n', type=int, default=1,
                         help="Number of predictions to make per query")
     parser.add_argument('--no-cuda', action='store_true',
@@ -72,6 +74,7 @@ if __name__ == '__main__':
     DrQA = pipeline.DrQATransformers(
         reader_model=args.reader_model,
         use_fast_tokenizer=args.use_fast_tokenizer,
+        group_length=args.group_length,
         cuda=args.cuda,
         ranker_config={
             'options': {

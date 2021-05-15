@@ -37,12 +37,16 @@ if __name__ == '__main__':
                         help="Whether to use fast tokenizer")
     parser.add_argument('--retriever-model', type=str, default=None,
                         help='Path to Document Retriever model (tfidf)')
+    parser.add_argument('--group-length', type=int, default=200,
+                        help='Target size for squashing short paragraphs together')
     parser.add_argument('--doc-db', type=str, default=None,
                         help='Path to Document DB')
     parser.add_argument('--no-cuda', action='store_true',
                         help="Use CPU only")
     parser.add_argument('--num-workers', type=int, default=None,
                         help='Number of CPU processes (for tokenizing, etc)')
+    parser.add_argument('--batch-size', type=int, default=32,
+                        help='Document paragraph batching size')    
     args = parser.parse_args()
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -57,6 +61,7 @@ if __name__ == '__main__':
     DrQA = pipeline.DrQATransformers(
         reader_model=args.reader_model,
         use_fast_tokenizer=args.use_fast_tokenizer,
+        group_length=args.group_length,
         cuda=args.cuda,
         ranker_config={
             'options': {
@@ -66,6 +71,7 @@ if __name__ == '__main__':
         },
         db_config={'options': {'db_path': args.doc_db}},
         num_workers=args.num_workers,
+        batch_size=args.batch_size,
     )
 
     # ------------------------------------------------------------------------------
