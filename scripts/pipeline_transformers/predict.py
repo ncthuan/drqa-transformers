@@ -108,7 +108,6 @@ if __name__ == '__main__':
         
         progess_bar = tqdm(enumerate(queries), total=len(queries))
         for i, query in progess_bar:
-            if i < 5: continue
             predictions = DrQA.process(
                 query,
                 n_docs=args.n_docs,
