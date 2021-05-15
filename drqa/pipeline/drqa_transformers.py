@@ -175,7 +175,6 @@ class DrQATransformers(object):
                 start[i] - (SEP_token_idx+1),
                 end[i] - (SEP_token_idx+1),
             )
-            breakpoint()
             prediction = {
                 'doc_id': didx2did[sidx2didx[split_id]],
                 'span': answer['answer'],
@@ -190,7 +189,6 @@ class DrQATransformers(object):
                 }
             all_predictions.append(prediction)
 
-        # breakpoint()
         return all_predictions
 
 
@@ -288,9 +286,6 @@ class DrQATransformers(object):
             if start <= token_idx <= end:
                 if token_idx == start:
                     char_start_idx = chars_idx
-
-                # if token_idx == end:
-                #     char_end_idx = chars_idx + len(word)
 
                 words += [word]
 
