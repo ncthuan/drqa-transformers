@@ -44,16 +44,16 @@ def fetch_text(doc_id):
 
 class DrQATransformers(object):
     def __init__(
-            self,
-            reader_model=None,
-            use_fast_tokenizer=True,
-            group_length=200,
-            batch_size=32,
-            cuda=True,
-            num_workers=None,
-            db_config=None,
-            ranker_config=None,
-        ):
+        self,
+        reader_model=None,
+        use_fast_tokenizer=True,
+        group_length=200,
+        batch_size=32,
+        cuda=True,
+        num_workers=None,
+        db_config=None,
+        ranker_config=None,
+    ):
         """Initialize the pipeline.
 
         Args:
@@ -86,8 +86,12 @@ class DrQATransformers(object):
         reader_model = reader_model or DEFAULTS['reader_model']
         self.reader = AutoModelForQuestionAnswering \
             .from_pretrained(reader_model) \
+            .eval() \
             .to(self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(reader_model, use_fast=use_fast_tokenizer)
+        self.need_token_type = self.reader.base_model_prefix not in {
+            "xlm", "roberta", "distilbert", "camembert", "bart", "longformer"
+        }
 
         logger.info('Initializing document retrievers...')
         db_config = db_config or {}
@@ -144,19 +148,25 @@ class DrQATransformers(object):
                 flat_splits.append(split)
                 sidx2didx.append(i)
             didx2sidx[-1][1] = len(flat_splits)
-        n_examples = len(flat_splits)
 
         # Tokenize
         inputs = self.tokenizer(
-            [query]*n_examples,
+            [query]*len(flat_splits),
             flat_splits,
             padding=True,
-            truncation=True,
+            truncation=True, 
+            # stride=128, # Truncation not implemented yet
+            # return_overflowing_tokens=True,
             return_attention_mask=True,
-            return_tensors='pt'
-        ).to(self.device)
+            return_token_type_ids=self.need_token_type,
+            return_offsets_mapping=True,
+            return_tensors='pt',
+        )
+        offset_mapping = inputs.offset_mapping
+        inputs_gpu = inputs.to(self.device)
         
         # Split batches
+        n_examples = inputs.input_ids.shape[0]
         n_batch = ceil(n_examples / self.batch_size)
         batches = [i*self.batch_size for i in range(n_batch)] #[0,32,64,..]
         batches.append(n_examples)
@@ -165,10 +175,17 @@ class DrQATransformers(object):
         outputs = []
         for i in range(n_batch):
             with torch.no_grad():
-                output = self.reader(
-                    inputs.input_ids[batches[i]:batches[i+1]],
-                    inputs.attention_mask[batches[i]:batches[i+1]]
-                )
+                if self.need_token_type:
+                    output = self.reader(
+                        inputs_gpu.input_ids[batches[i]:batches[i+1]],
+                        inputs_gpu.attention_mask[batches[i]:batches[i+1]],
+                        token_type_ids=inputs_gpu.token_type_ids[batches[i]:batches[i+1]],
+                    )
+                else:
+                    output = self.reader(
+                        inputs_gpu.input_ids[batches[i]:batches[i+1]],
+                        inputs_gpu.attention_mask[batches[i]:batches[i+1]],
+                    )
                 outputs.append(output)
 
         # Join batch outputs
@@ -176,36 +193,32 @@ class DrQATransformers(object):
         end_logits = torch.cat([o.end_logits for o in outputs], dim=0)
 
         # decode start-end logits to span slice & score
-        start, end, score, idx_sort = self.decode_transformers(inputs, start_logits, end_logits, topk=top_n)
+        start, end, score, idx_sort = self.decode_logits(start_logits, end_logits, topk=top_n)
 
         # Produce predictions, take top_n predictions with highest score
         all_predictions = []
         for i in range(top_n):
             split_id = idx_sort[i]
-            SEP_token_idx = int(torch.where(inputs.input_ids[0] == 102)[0][0])
-            answer = self.span_to_answer(
-                flat_splits[split_id],
-                start[i] - (SEP_token_idx+1),
-                end[i] - (SEP_token_idx+1),
-            )
+            start_char = offset_mapping[split_id, start[i], 0].item()
+            end_char = offset_mapping[split_id, end[i], 1].item()
             prediction = {
                 'doc_id': didx2did[sidx2didx[split_id]],
-                'span': answer['answer'],
+                'span': flat_splits[split_id][start_char:end_char],
                 'doc_score': all_doc_scores[0][sidx2didx[split_id]],
                 'span_score': score[i],
             }
             if return_context:
                 prediction['context'] = {
                     'text': flat_splits[split_id],
-                    'start': answer['start'],
-                    'end': answer['end'],
+                    'start': start_char,
+                    'end': end_char,
                 }
             all_predictions.append(prediction)
 
         return all_predictions
 
 
-    def decode_transformers(self, inputs, start_logits, end_logits, topk=1, max_answer_len=None):
+    def decode_logits(self, start_logits, end_logits, topk=1, max_answer_len=None):
         """
         Take the output of any :obj:`ModelForQuestionAnswering` and generate probabilities for each span to be the
         actual answer.
@@ -215,7 +228,6 @@ class DrQATransformers(object):
         the topk argument.
 
         Args:
-            inputs: inputs object outputted by the tokenizer
             start_logits (:obj:`tensor`): Individual start logits for each token. # shape batch*len(input_ids[0])
             end_logits (:obj:`tensor`): Individual end logits for each token.
             topk (:obj:`int`): Indicates how many possible answer span(s) to extract from the model output.
@@ -227,31 +239,12 @@ class DrQATransformers(object):
             scores:  top_n prediction scores
             idx_sort:  top_n batch element ids
         """
-        input_ids = inputs.input_ids.cpu().numpy()
-        start_logits = start_logits.cpu().numpy()
-        end_logits = end_logits.cpu().numpy()
+        start = start_logits.numpy().clip(min=0.0)
+        end = end_logits.numpy().clip(min=0.0)
         # Ensure we have batch axis
-        if start_logits.ndim == 1: start_logits = start_logits[None]
-        if end_logits.ndim == 1: end_logits = end_logits[None]
-        max_answer_len = max_answer_len or start_logits.shape[1]
-
-        # Ensure padded tokens & question tokens cannot belong to the set of candidate answers.
-        # We need the part between two <SEP> tokens
-        undesired_tokens = (input_ids == 102).astype('int') # 102: <SEP> token
-        for i in range(input_ids.shape[0]):
-            sep_token_ids = np.where(input_ids[i] == 102)[0]
-            sep_start, sep_end = sep_token_ids[0], sep_token_ids[1]
-            undesired_tokens[i, sep_start:sep_end] = 1
-        # Generate mask
-        undesired_tokens_mask = undesired_tokens == 0
-
-        # Make sure non-context indexes in the tensor cannot contribute to the softmax
-        start_logits = np.where(undesired_tokens_mask, -10000.0, start_logits)
-        end_logits = np.where(undesired_tokens_mask, -10000.0, end_logits)
-
-        # Normalize logits to probs
-        start = np.exp(start_logits - np.log(np.sum(np.exp(start_logits), axis=-1, keepdims=True)))
-        end = np.exp(end_logits - np.log(np.sum(np.exp(end_logits), axis=-1, keepdims=True)))
+        if start.ndim == 1: start = start[None]
+        if end.ndim == 1: end = end[None]
+        max_answer_len = max_answer_len or start.shape[1]
 
         # Compute the score of each tuple(start, end) to be the real answer
         outer = np.matmul(np.expand_dims(start, -1), np.expand_dims(end, 1))
@@ -270,51 +263,6 @@ class DrQATransformers(object):
             idx_sort = idx[np.argsort(-scores_flat[idx])]
 
         idx_sort, starts, ends = np.unravel_index(idx_sort, candidates.shape)
-        desired_spans = np.isin(starts, undesired_tokens.nonzero()) & np.isin(ends, undesired_tokens.nonzero())
-        starts = starts[desired_spans]
-        ends = ends[desired_spans]
         scores = candidates[idx_sort, starts, ends]
 
         return starts, ends, scores, idx_sort
-
-
-    def span_to_answer(self, text: str, start: int, end: int):
-        """
-        When decoding from token probabilities, this method maps token indexes to actual word in the initial context.
-
-        Args:
-            text (:obj:`str`): The actual context to extract the answer from.
-            start (:obj:`int`): The answer starting token index.
-            end (:obj:`int`): The answer end token index.
-
-        Returns:
-            Dictionary like :obj:`{'answer': str, 'start': int, 'end': int}`
-        """
-        words = []
-        token_idx = char_start_idx = char_end_idx = chars_idx = 0
-
-        for i, word in enumerate(text.split(" ")):
-            token = self.tokenizer.tokenize(word)
-
-            # Append words if they are in the span
-            if start <= token_idx <= end:
-                if token_idx == start:
-                    char_start_idx = chars_idx
-
-                words += [word]
-
-            # Stop if we went over the end of the answer
-            if token_idx > end:
-                char_end_idx = chars_idx
-                break
-
-            # Append the subtokenization length to the running index
-            token_idx += len(token)
-            chars_idx += len(word) + 1
-
-        # Join text with spaces
-        return {
-            "answer": " ".join(words),
-            "start": max(0, char_start_idx),
-            "end": min(len(text), char_end_idx),
-        }
