@@ -39,7 +39,7 @@ if __name__ == '__main__':
     parser.add_argument('dataset', type=str)
     parser.add_argument('--reader-model', type=str, default=None,
                         help="Name of the Huggingface transformer model")
-    parser.add_argument('--use-fast-tokenizer', action='store_true',
+    parser.add_argument('--use-fast-tokenizer', action='store_true', default=True,
                         help="Whether to use fast tokenizer")
     parser.add_argument('--retriever-model', type=str, default=None,
                         help="Path to Document Retriever model (tfidf)")
