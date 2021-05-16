@@ -116,9 +116,8 @@ if __name__ == '__main__':
     exact_match = 0
     f1 = 0
     for i in range(len(predictions)):
-        match_fn = regex_match_score if regex else exact_match_score
         exact_match += metric_max_over_ground_truths(
-            match_fn, predictions[i], answers[i]
+            exact_match_score, predictions[i], answers[i]
         )
         f1 += metric_max_over_ground_truths(
             f1_score, predictions[i], answers[i]

@@ -161,9 +161,8 @@ class DrQATransformers(object):
             return_token_type_ids=self.need_token_type,
             return_offsets_mapping=True,
             return_tensors='pt',
-        )
+        ).to(self.device)
         offset_mapping = inputs.offset_mapping
-        inputs_gpu = inputs.to(self.device)
         
         # Split batches
         n_examples = inputs.input_ids.shape[0]
@@ -177,14 +176,14 @@ class DrQATransformers(object):
             with torch.no_grad():
                 if self.need_token_type:
                     output = self.reader(
-                        inputs_gpu.input_ids[batches[i]:batches[i+1]],
-                        inputs_gpu.attention_mask[batches[i]:batches[i+1]],
-                        token_type_ids=inputs_gpu.token_type_ids[batches[i]:batches[i+1]],
+                        inputs.input_ids[batches[i]:batches[i+1]],
+                        inputs.attention_mask[batches[i]:batches[i+1]],
+                        token_type_ids=inputs.token_type_ids[batches[i]:batches[i+1]],
                     )
                 else:
                     output = self.reader(
-                        inputs_gpu.input_ids[batches[i]:batches[i+1]],
-                        inputs_gpu.attention_mask[batches[i]:batches[i+1]],
+                        inputs.input_ids[batches[i]:batches[i+1]],
+                        inputs.attention_mask[batches[i]:batches[i+1]],
                     )
                 outputs.append(output)
 
@@ -220,30 +219,25 @@ class DrQATransformers(object):
 
     def decode_logits(self, start_logits, end_logits, topk=1, max_answer_len=None):
         """
-        Take the output of any :obj:`ModelForQuestionAnswering` and generate probabilities for each span to be the
-        actual answer.
+        Take the output of any :obj:`ModelForQuestionAnswering` and generate score for each span to be the actual answer.
 
         In addition, it filters out some unwanted/impossible cases like answer len being greater than max_answer_len or
         answer end position being before the starting position. The method supports output the k-best answer through
         the topk argument.
 
         Args:
-            start_logits (:obj:`tensor`): Individual start logits for each token. # shape batch*len(input_ids[0])
+            start_logits (:obj:`tensor`): Individual start logits for each token. # shape: batch, len(input_ids[0])
             end_logits (:obj:`tensor`): Individual end logits for each token.
             topk (:obj:`int`): Indicates how many possible answer span(s) to extract from the model output.
             max_answer_len (:obj:`int`): Maximum size of the answer to extract from the model's output.
-            undesired_tokens (:obj:`np.ndarray`): Mask determining tokens that can be part of the answer
         Output:
             starts:  top_n predicted start indices
             ends:  top_n predicted end indices
             scores:  top_n prediction scores
             idx_sort:  top_n batch element ids
         """
-        start = start_logits.numpy().clip(min=0.0)
-        end = end_logits.numpy().clip(min=0.0)
-        # Ensure we have batch axis
-        if start.ndim == 1: start = start[None]
-        if end.ndim == 1: end = end[None]
+        start = start_logits.cpu().numpy().clip(min=0.0)
+        end = end_logits.cpu().numpy().clip(min=0.0)
         max_answer_len = max_answer_len or start.shape[1]
 
         # Compute the score of each tuple(start, end) to be the real answer
