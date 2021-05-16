@@ -9,3 +9,4 @@ nltk
 elasticsearch
 pexpect==4.2.1
 transformers
+spacy
