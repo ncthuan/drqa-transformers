@@ -57,7 +57,7 @@ class DrQATransformers(object):
         """Initialize the pipeline.
 
         Args:
-            reader_model: model file from which to load the DocReader.
+            reader_model: name of the Huggingface transformer QA model.
             use_fast_tokenizer: whether to use fast tokenizer
             fixed_candidates: if given, all predictions will be constrated to
                 the set of candidates contained in the file. One entry per line.
@@ -88,10 +88,14 @@ class DrQATransformers(object):
             .from_pretrained(reader_model) \
             .eval() \
             .to(self.device)
-        self.tokenizer = AutoTokenizer.from_pretrained(reader_model, use_fast=use_fast_tokenizer)
         self.need_token_type = self.reader.base_model_prefix not in {
             "xlm", "roberta", "distilbert", "camembert", "bart", "longformer"
         }
+        tokenizer_kwargs = {}
+        if self.reader.base_model_prefix in {'mobilebert'}:
+            tokenizer_kwargs['model_max_length'] = self.reader.config.max_position_embeddings
+        #
+        self.tokenizer = AutoTokenizer.from_pretrained(reader_model, use_fast=use_fast_tokenizer, **tokenizer_kwargs)
 
         logger.info('Initializing document retrievers...')
         db_config = db_config or {}
