@@ -47,7 +47,7 @@ if __name__ == '__main__':
                         help='Path to Document DB')
     parser.add_argument('--n-docs', type=int, default=5,
                         help="Number of docs to retrieve per query")
-    parser.add_argument('--group-length', type=int, default=200,
+    parser.add_argument('--group-length', type=int, default=500,
                         help='Target size for squashing short paragraphs together')
     # parser.add_argument('--top-n', type=int, default=1,
     #                     help="Number of predictions to make per query")

@@ -37,7 +37,7 @@ if __name__ == '__main__':
                         help="Whether to use fast tokenizer")
     parser.add_argument('--retriever-model', type=str, default=None,
                         help='Path to Document Retriever model (tfidf)')
-    parser.add_argument('--group-length', type=int, default=200,
+    parser.add_argument('--group-length', type=int, default=500,
                         help='Target size for squashing short paragraphs together')
     parser.add_argument('--doc-db', type=str, default=None,
                         help='Path to Document DB')

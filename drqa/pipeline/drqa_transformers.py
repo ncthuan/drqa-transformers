@@ -47,7 +47,7 @@ class DrQATransformers(object):
         self,
         reader_model=None,
         use_fast_tokenizer=True,
-        group_length=200,
+        group_length=500,
         batch_size=32,
         cuda=True,
         num_workers=None,
@@ -158,15 +158,14 @@ class DrQATransformers(object):
             [query]*len(flat_splits),
             flat_splits,
             padding=True,
-            truncation=True, 
-            # stride=128, # Truncation not implemented yet
-            # return_overflowing_tokens=True,
+            truncation='only_second',
+            stride=96,
+            return_overflowing_tokens=True,
             return_attention_mask=True,
             return_token_type_ids=self.need_token_type,
             return_offsets_mapping=True,
             return_tensors='pt',
         ).to(self.device)
-        offset_mapping = inputs.offset_mapping
         
         # Split batches
         n_examples = inputs.input_ids.shape[0]
@@ -201,9 +200,9 @@ class DrQATransformers(object):
         # Produce predictions, take top_n predictions with highest score
         all_predictions = []
         for i in range(top_n):
-            split_id = idx_sort[i]
-            start_char = offset_mapping[split_id, start[i], 0].item()
-            end_char = offset_mapping[split_id, end[i], 1].item()
+            split_id = inputs.overflow_to_sample_mapping[idx_sort[i]].item()
+            start_char = inputs.offset_mapping[idx_sort[i], start[i], 0].item()
+            end_char = inputs.offset_mapping[idx_sort[i], end[i], 1].item()
             prediction = {
                 'doc_id': didx2did[sidx2didx[split_id]],
                 'span': flat_splits[split_id][start_char:end_char],
