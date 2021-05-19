@@ -6,6 +6,9 @@
 # LICENSE file in the root directory of this source tree.
 """Follows official evaluation script for v1.1 of the SQuAD dataset."""
 
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 import argparse
 import json
 from drqa.retriever.utils import normalize
