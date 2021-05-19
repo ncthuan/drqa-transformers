@@ -59,12 +59,9 @@ class DrQATransformers(object):
         Args:
             reader_model: name of the Huggingface transformer QA model.
             use_fast_tokenizer: whether to use fast tokenizer
-            fixed_candidates: if given, all predictions will be constrated to
-                the set of candidates contained in the file. One entry per line.
             batch_size: batch size when processing paragraphs.
             cuda: whether to use gpu.
-            num_workers: number of parallel CPU processes to use for tokenizing
-                and post processing resuls.
+            num_workers: number of parallel CPU processes to use for retrieving
             db_config: config for doc db.
             ranker_config: config for ranker.
             group_length: target size for squashing short paragraphs together.
