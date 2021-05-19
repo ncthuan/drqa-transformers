@@ -17,7 +17,9 @@ import logging
 import time
 
 from termcolor import colored
-from drqa import pipeline
+
+from drqa.pipeline.drqa_transformers import DrQATransformers
+from drqa.pipeline.pyserini_transformers import PyseriniTransformersQA
 
 
 if __name__ == '__main__':
@@ -35,6 +37,10 @@ if __name__ == '__main__':
                         help="Name of the Huggingface transformer model")
     parser.add_argument('--use-fast-tokenizer', action='store_true', default=True,
                         help="Whether to use fast tokenizer")
+    parser.add_argument('--retriever', type=str, choices=['tfidf, serini-bm25'],
+                        help='Choice of retriever', default='serini-bm25')
+    parser.add_argument('--index-path', type=str, default=None,
+                        help='Path to the index used for pyserini module')
     parser.add_argument('--retriever-model', type=str, default=None,
                         help='Path to Document Retriever model (tfidf)')
     parser.add_argument('--group-length', type=int, default=500,
@@ -46,7 +52,7 @@ if __name__ == '__main__':
     parser.add_argument('--num-workers', type=int, default=None,
                         help='Number of CPU processes (for tokenizing, etc)')
     parser.add_argument('--batch-size', type=int, default=32,
-                        help='Document paragraph batching size')    
+                        help='Document paragraph batching size')
     args = parser.parse_args()
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -58,30 +64,46 @@ if __name__ == '__main__':
 
     
     logger.info('Initializing pipeline...')
-    DrQA = pipeline.DrQATransformers(
-        reader_model=args.reader_model,
-        use_fast_tokenizer=args.use_fast_tokenizer,
-        group_length=args.group_length,
-        cuda=args.cuda,
-        ranker_config={
-            'options': {
-                'tfidf_path': args.retriever_model,
-                'strict': False
-            }
-        },
-        db_config={'options': {'db_path': args.doc_db}},
-        num_workers=args.num_workers,
-        batch_size=args.batch_size,
-    )
+    
+    if args.retriever == 'tfidf':
+        pipeline = DrQATransformers(
+            reader_model=args.reader_model,
+            use_fast_tokenizer=args.use_fast_tokenizer,
+            group_length=args.group_length,
+            cuda=args.cuda,
+            ranker_config={
+                'options': {
+                    'tfidf_path': args.retriever_model,
+                    'strict': False
+                }
+            },
+            db_config={'options': {'db_path': args.doc_db}},
+            num_workers=args.num_workers,
+            batch_size=args.batch_size,
+        )
+        n_docs_default = 5
+        
+    elif args.retriever == 'serini-bm25':
+        pipeline = PyseriniTransformersQA(
+            reader_model=args.reader_model,
+            use_fast_tokenizer=args.use_fast_tokenizer,
+            index_path=args.index_path,
+            cuda=args.cuda,
+            ranker_config=None,
+            num_workers=args.num_workers,
+            batch_size=args.batch_size,
+        )
+        n_docs_default = 30
+
 
     # ------------------------------------------------------------------------------
     # Drop in to interactive mode
     # ------------------------------------------------------------------------------
 
 
-    def process(question, top_n=3, n_docs=5):
+    def process(question, top_n=3, n_docs=n_docs_default):
         t0 = time.time()
-        predictions = DrQA.process(
+        predictions = pipeline.process(
             question, top_n, n_docs, return_context=True
         )
         logger.info('Processed 1 query in %.4f (s)' % (time.time() - t0))
