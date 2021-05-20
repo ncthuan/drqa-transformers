@@ -161,8 +161,8 @@ class PyseriniTransformersQA(object):
                 prediction = {
                     'doc_id': passage_ids[passage_idx],
                     'span': passages[passage_idx][start_char:end_char],
-                    'doc_score': passage_scores[passage_idx],
-                    'span_score': score[i],
+                    'doc_score': float(passage_scores[passage_idx]),
+                    'span_score': float(score[i]),
                 }
                 if return_context:
                     prediction['context'] = {

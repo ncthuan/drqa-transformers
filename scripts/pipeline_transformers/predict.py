@@ -113,12 +113,6 @@ if __name__ == '__main__':
                 n_docs=args.n_docs,
                 top_n=args.top_n,
             )
-            for p in predictions:
-                # to string before dumping
-                p['doc_score'] = '%.5g' % p['doc_score']
-                p['span_score'] = '%.5g' % p['span_score']
-            
-            # Dump predictions for each query on a single line
             f.write(json.dumps(predictions) + '\n')
 
     logger.info('Total time: %.2f' % (time.time() - t0))

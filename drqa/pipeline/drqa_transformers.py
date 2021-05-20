@@ -203,8 +203,8 @@ class DrQATransformers(object):
             prediction = {
                 'doc_id': didx2did[sidx2didx[split_id]],
                 'span': flat_splits[split_id][start_char:end_char],
-                'doc_score': all_doc_scores[0][sidx2didx[split_id]],
-                'span_score': score[i],
+                'doc_score': float(all_doc_scores[0][sidx2didx[split_id]]),
+                'span_score': float(score[i]),
             }
             if return_context:
                 prediction['context'] = {
