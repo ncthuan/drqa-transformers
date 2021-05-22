@@ -23,6 +23,7 @@ class PyseriniTransformersQA(object):
     def __init__(
         self,
         index_path=None,
+        index_lan='en',
         reader_model=None,
         use_fast_tokenizer=True,
         batch_size=32,
@@ -37,19 +38,21 @@ class PyseriniTransformersQA(object):
             use_fast_tokenizer: whether to use fast tokenizer
             batch_size: batch size when processing passages.
             cuda: whether to use gpu for reader inference.
-            index_path:
-            ranker_config: 
+            index_path: path to the index used for pyserini module
+            index_lan: language of the index ('en', 'vi', 'zh'...)
+            ranker_config:  #not implemented (k1, b)
             num_workers: number of parallel CPU processes to use for retrieving
         """
+        assert use_fast_tokenizer == True, 'Current version only support models with fast tokenizer'
         self.batch_size = batch_size
-        self.device = 'cuda' if cuda else 'cpu'
+        self.device = 'cuda' if cuda and torch.cuda.is_available() else 'cpu'
         self.num_workers = num_workers
 
         logger.info('Initializing document ranker/retriever...')
         index_path = index_path or DEFAULTS['index_path']
         self.retriever = SimpleSearcher(index_path)
         self.retriever.set_bm25(k1=0.9, b=0.4)
-        self.retriever.object.setLanguage("en")
+        self.retriever.object.setLanguage(index_lan)
 
         logger.info('Initializing document reader & tokenizer...')
         reader_model = reader_model or DEFAULTS['reader_model']

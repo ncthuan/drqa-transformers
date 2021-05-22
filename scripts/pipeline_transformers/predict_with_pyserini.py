@@ -39,6 +39,8 @@ if __name__ == '__main__':
                         help="Whether to use fast tokenizer")
     parser.add_argument('--index-path', type=str, default=None,
                         help='Path to the index used for pyserini module')
+    parser.add_argument('--index-lan', type=str, default=None,
+                        help='language of the index (en, vi, zh...)')
     parser.add_argument('--n-docs', type=int, default=30,
                         help="Number of docs to retrieve per query")
     parser.add_argument('--top-n', type=int, default=1,
@@ -107,7 +109,7 @@ if __name__ == '__main__':
                 args.top_n,
                 args.n_docs,
             )
-            for p in predictions:
-                f.write(json.dumps(p) + '\n')
+            # for p in predictions:
+            #     f.write(json.dumps(p) + '\n')
 
     logger.info('Total time: %.2f' % (time.time() - t0))

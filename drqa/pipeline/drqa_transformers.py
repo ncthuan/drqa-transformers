@@ -68,6 +68,7 @@ class DrQATransformers(object):
                 0 = read every paragraph independently
                 infty = read all paragraphs together
         """
+        assert use_fast_tokenizer == True, 'Current version only support models with fast tokenizer'
         self.batch_size = batch_size
         self.device = 'cuda' if cuda else 'cpu'
         self.num_workers = num_workers
