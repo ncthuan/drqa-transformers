@@ -37,7 +37,7 @@ if __name__ == '__main__':
                         help="Name of the Huggingface transformer model")
     parser.add_argument('--use-fast-tokenizer', action='store_true', default=True,
                         help="Whether to use fast tokenizer")
-    parser.add_argument('--retriever', type=str, choices=['tfidf, serini-bm25'],
+    parser.add_argument('--retriever', type=str, choices=['tfidf', 'serini-bm25'],
                         help='Choice of retriever', default='serini-bm25')
     parser.add_argument('--index-path', type=str, default=None,
                         help='Path to the index used for pyserini module')
