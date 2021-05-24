@@ -2,6 +2,7 @@ import torch
 import logging
 import numpy as np
 from math import ceil
+import json
 
 from pyserini.search import SimpleSearcher
 from transformers import AutoModelForQuestionAnswering, AutoTokenizer
@@ -88,7 +89,12 @@ class PyseriniTransformersQA(object):
         for i, (query_id, query_results) in enumerate(query_dict.items()):
             input_queries.extend([queries[i]]*n_passages)
             for passage in query_results:
-                passages.append(passage.raw)
+                try:
+                    content = json.loads(passage.raw)['contents']
+                except Exception as e:
+                    content = passage.raw
+                
+                passages.append(content)
                 passage_ids.append(passage.docid)
                 passage_scores.append(passage.score)
 
