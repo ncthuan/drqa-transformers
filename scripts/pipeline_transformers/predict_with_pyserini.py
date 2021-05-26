@@ -109,7 +109,7 @@ if __name__ == '__main__':
                 args.top_n,
                 args.n_docs,
             )
-            # for p in predictions:
-            #     f.write(json.dumps(p) + '\n')
+            for p in predictions:
+                f.write(json.dumps(p) + '\n')
 
     logger.info('Total time: %.2f' % (time.time() - t0))
