@@ -74,6 +74,7 @@ if __name__ == '__main__':
         reader_model=args.reader_model,
         use_fast_tokenizer=args.use_fast_tokenizer,
         index_path=args.index_path,
+        index_lan=args.index_lan,
         cuda=args.cuda,
         ranker_config=None, # not implemented
         num_workers=args.num_workers,

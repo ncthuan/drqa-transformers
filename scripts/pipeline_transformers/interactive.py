@@ -41,6 +41,8 @@ if __name__ == '__main__':
                         help='Choice of retriever', default='serini-bm25')
     parser.add_argument('--index-path', type=str, default=None,
                         help='Path to the index used for pyserini module')
+    parser.add_argument('--index-lan', type=str, default=None,
+                        help='language of the index (en, vi, zh...)')
     parser.add_argument('--retriever-model', type=str, default=None,
                         help='Path to Document Retriever model (tfidf)')
     parser.add_argument('--group-length', type=int, default=500,
@@ -88,6 +90,7 @@ if __name__ == '__main__':
             reader_model=args.reader_model,
             use_fast_tokenizer=args.use_fast_tokenizer,
             index_path=args.index_path,
+            index_lan=args.index_lan,
             cuda=args.cuda,
             ranker_config=None,
             num_workers=args.num_workers,
