@@ -13,3 +13,5 @@ pyserini
 gunicorn
 flask
 tqdm>=4.56.0
+pydantic
+pyngrok
