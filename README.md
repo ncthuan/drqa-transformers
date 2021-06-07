@@ -53,3 +53,12 @@ python scripts\pipeline_transformers\interactive.py
 
 ### Web UI
 At drqa-webui submodule
+
+Showcase
+![Sample question](report/sample.png)
+
+# Future work
+Still, there are a lot to improve, so many new novel methods and ideas to implement
+* Better retriever scheme...
+* Employ better QA models
+* [UIT-VIQuAD dataset](https://www.aclweb.org/anthology/2020.coling-main.233/) for Vietnamese
