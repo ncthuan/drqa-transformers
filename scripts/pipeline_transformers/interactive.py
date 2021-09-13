@@ -37,10 +37,12 @@ if __name__ == '__main__':
                         help="Name of the Huggingface transformer model")
     parser.add_argument('--use-fast-tokenizer', action='store_true', default=True,
                         help="Whether to use fast tokenizer")
-    parser.add_argument('--retriever', type=str, choices=['tfidf, serini-bm25'],
+    parser.add_argument('--retriever', type=str, choices=['tfidf', 'serini-bm25'],
                         help='Choice of retriever', default='serini-bm25')
     parser.add_argument('--index-path', type=str, default=None,
                         help='Path to the index used for pyserini module')
+    parser.add_argument('--index-lan', type=str, default=None,
+                        help='language of the index (en, vi, zh...)')
     parser.add_argument('--retriever-model', type=str, default=None,
                         help='Path to Document Retriever model (tfidf)')
     parser.add_argument('--group-length', type=int, default=500,
@@ -49,6 +51,8 @@ if __name__ == '__main__':
                         help='Path to Document DB')
     parser.add_argument('--no-cuda', action='store_true',
                         help="Use CPU only")
+    parser.add_argument('--gpu', type=int, default=-1,
+                        help="Specify GPU device id to use")
     parser.add_argument('--num-workers', type=int, default=None,
                         help='Number of CPU processes (for tokenizing, etc)')
     parser.add_argument('--batch-size', type=int, default=32,
@@ -88,6 +92,7 @@ if __name__ == '__main__':
             reader_model=args.reader_model,
             use_fast_tokenizer=args.use_fast_tokenizer,
             index_path=args.index_path,
+            index_lan=args.index_lan,
             cuda=args.cuda,
             ranker_config=None,
             num_workers=args.num_workers,

@@ -26,3 +26,4 @@ def set_default(key, value):
 
 from .drqa import DrQA
 from .drqa_transformers import DrQATransformers
+from .pyserini_transformers import PyseriniTransformersQA

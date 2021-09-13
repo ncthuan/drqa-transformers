@@ -20,6 +20,7 @@ def set_default(key, value):
 from .corenlp_tokenizer import CoreNLPTokenizer
 from .regexp_tokenizer import RegexpTokenizer
 from .simple_tokenizer import SimpleTokenizer
+from .coccoc_tokenizer import CocCocTokenizer
 
 # Spacy is optional
 try:
@@ -27,23 +28,18 @@ try:
 except ImportError:
     pass
 
-# try:
-#     from .spacy_vi_tokenizer import SpacyViTokenizer
-# except ImportError:
-#     pass
-
 
 def get_class(name):
     if name == 'spacy':
         return SpacyTokenizer
-    # if name == 'spacy_vi':
-    #     return SpacyViTokenizer
     if name == 'corenlp':
         return CoreNLPTokenizer
     if name == 'regexp':
         return RegexpTokenizer
     if name == 'simple':
         return SimpleTokenizer
+    if name == 'coccoc':
+        return CocCocTokenizer
 
     raise RuntimeError('Invalid tokenizer: %s' % name)
 

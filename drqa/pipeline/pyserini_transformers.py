@@ -2,12 +2,14 @@ import torch
 import logging
 import numpy as np
 from math import ceil
+import json
 
 from pyserini.search import SimpleSearcher
 from transformers import AutoModelForQuestionAnswering, AutoTokenizer
 
 DEFAULTS = {
     'index_path': 'data/index/lucene-index.enwiki-20180701-paragraphs',
+    'index_lan': 'en',
     'reader_model': 'distilbert-base-cased-distilled-squad',
 }
 
@@ -23,7 +25,7 @@ class PyseriniTransformersQA(object):
     def __init__(
         self,
         index_path=None,
-        index_lan='en',
+        index_lan=None,
         reader_model=None,
         use_fast_tokenizer=True,
         batch_size=32,
@@ -34,7 +36,7 @@ class PyseriniTransformersQA(object):
         """Initialize the pipeline.
 
         Args:
-            reader_model: name of the Huggingface transformer QA model.
+            reader_model: name or path to Huggingface transformer QA model.
             use_fast_tokenizer: whether to use fast tokenizer
             batch_size: batch size when processing passages.
             cuda: whether to use gpu for reader inference.
@@ -47,15 +49,16 @@ class PyseriniTransformersQA(object):
         self.batch_size = batch_size
         self.device = 'cuda' if cuda and torch.cuda.is_available() else 'cpu'
         self.num_workers = num_workers
-
-        logger.info('Initializing document ranker/retriever...')
         index_path = index_path or DEFAULTS['index_path']
+        index_lan = index_lan or DEFAULTS['index_lan']
+        reader_model = reader_model or DEFAULTS['reader_model']
+
+        logger.info(f'Initializing document ranker/retriever from index: {index_path}, language: {index_lan}')
         self.retriever = SimpleSearcher(index_path)
         self.retriever.set_bm25(k1=0.9, b=0.4)
         self.retriever.object.setLanguage(index_lan)
 
-        logger.info('Initializing document reader & tokenizer...')
-        reader_model = reader_model or DEFAULTS['reader_model']
+        logger.info(f'Initializing document reader & tokenizer from: {reader_model}')
         self.reader = AutoModelForQuestionAnswering \
             .from_pretrained(reader_model) \
             .eval() \
@@ -88,7 +91,12 @@ class PyseriniTransformersQA(object):
         for i, (query_id, query_results) in enumerate(query_dict.items()):
             input_queries.extend([queries[i]]*n_passages)
             for passage in query_results:
-                passages.append(passage.raw)
+                try:
+                    content = json.loads(passage.raw)['contents']
+                except Exception as e:
+                    content = passage.raw
+                
+                passages.append(content)
                 passage_ids.append(passage.docid)
                 passage_scores.append(passage.score)
 
@@ -116,6 +124,7 @@ class PyseriniTransformersQA(object):
                 query_offset.append(indexes[i])
         query_offset[0] = 0
         query_offset.append(indexes[-1])
+        assert len(query_offset) == len(queries)+1, "Oops a bug, Im sure have tested this query_offset carefully. Issue me"
         
         # Split batches
         n_batch = ceil(n_examples / self.batch_size)
